@@ -6275,7 +6275,9 @@ static server_config parse_options(int argc, char **argv) {
         } else if (!strcmp(arg, "--warm-weights")) {
             c.engine.warm_weights = true;
         } else if (!strcmp(arg, "--cpu") || !strcmp(arg, "--backend")) {
-            server_log(DS4_LOG_DEFAULT, "ds4-server: server mode is Metal-only");
+            server_log(DS4_LOG_DEFAULT, "ds4-server: backend option is not supported in this build");
+            server_log(DS4_LOG_DEFAULT, "ds4-server: the server requires Metal (macOS only)");
+            server_log(DS4_LOG_DEFAULT, "ds4-server: use the CLI instead: ./ds4 --backend cpu -p 'prompt'");
             exit(2);
         } else {
             server_log(DS4_LOG_DEFAULT, "ds4-server: unknown option: %s", arg);

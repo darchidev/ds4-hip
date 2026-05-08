@@ -203,8 +203,9 @@ static float parse_float_range(const char *s, const char *opt, float min, float 
 static ds4_backend parse_backend(const char *s) {
     if (!strcmp(s, "metal")) return DS4_BACKEND_METAL;
     if (!strcmp(s, "cpu")) return DS4_BACKEND_CPU;
+    if (!strcmp(s, "hip")) return DS4_BACKEND_HIP;
     fprintf(stderr, "ds4: invalid backend: %s\n", s);
-    fprintf(stderr, "ds4: valid backends are: metal, cpu\n");
+    fprintf(stderr, "ds4: valid backends are: metal, cpu, hip\n");
     exit(2);
 }
 
@@ -717,27 +718,36 @@ static int run_generation(ds4_engine *engine, const cli_config *cfg) {
         ds4_engine_dump_tokens(engine, &prompt);
     }
 
+    token_printer printer = {
+        .engine = engine,
+        .fp = stdout,
+        .format_thinking = ds4_think_mode_enabled(cli_effective_think_mode(&cfg->gen)),
+        .in_think = ds4_think_mode_enabled(cli_effective_think_mode(&cfg->gen)),
+        .use_color = isatty(fileno(stdout)) != 0,
+        .last_output_newline = true,
+    };
+    cli_prefill_progress progress = {
+        .base_tokens = 0,
+        .input_tokens = prompt.len,
+        .use_color = ds4_log_is_tty(stderr),
+    };
+
     if (diagnostic) {
         if (rc == 0) {
             fprintf(stderr, "ds4: diagnostic run completed on the native %s path.\n",
                     ds4_backend_name(cfg->engine.backend));
         }
+    } else if (cfg->engine.backend == DS4_BACKEND_CPU || cfg->engine.backend == DS4_BACKEND_HIP) {
+        rc = ds4_engine_generate_argmax(engine, &prompt, cfg->gen.n_predict,
+                                        cfg->gen.ctx_size,
+                                        print_generated_token,
+                                        generation_done,
+                                        &printer,
+                                        cli_prefill_progress_cb,
+                                        &progress);
     } else if (cfg->gen.temperature > 0.0f || ds4_engine_mtp_draft_tokens(engine) > 1) {
         rc = run_sampled_generation(engine, cfg, &prompt);
     } else {
-        token_printer printer = {
-            .engine = engine,
-            .fp = stdout,
-            .format_thinking = ds4_think_mode_enabled(cli_effective_think_mode(&cfg->gen)),
-            .in_think = ds4_think_mode_enabled(cli_effective_think_mode(&cfg->gen)),
-            .use_color = isatty(fileno(stdout)) != 0,
-            .last_output_newline = true,
-        };
-        cli_prefill_progress progress = {
-            .base_tokens = 0,
-            .input_tokens = prompt.len,
-            .use_color = ds4_log_is_tty(stderr),
-        };
         rc = ds4_engine_generate_argmax(engine, &prompt, cfg->gen.n_predict,
                                         cfg->gen.ctx_size,
                                         print_generated_token,
