@@ -483,6 +483,27 @@ Do not treat the CPU path as the production target. The server is Metal-only,
 and the optimized implementation lives in the Metal graph path. This may
 change in the future.
 
+## AMD HIP (ROCm) Backend
+
+Experimental support for AMD GPUs via HIP/ROCm is available. Build with:
+
+```sh
+make ds4-hip USE_HIP=1
+./ds4-hip --backend hip -p "Hello"
+```
+
+**Requirements:**
+- AMD GPU with ROCm runtime (tested on Radeon 8060S)
+- ROCm libraries installed (`hipamd`, `rocblas`, `rocsolver`)
+
+**Current Status:**
+- GPU initialization and detection works
+- Fallback to CPU when model exceeds GPU memory
+- ROCm backend allows running on Linux AMD systems (e.g., Ryzen AI Max+)
+
+Note: The current DeepSeek V4 Flash model (~81GB) exceeds most AMD GPU VRAM.
+For full GPU acceleration, a smaller model variant would be needed.
+
 ## Test Vectors
 
 `tests/test-vectors` contains short and long-context continuation vectors
