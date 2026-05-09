@@ -1,6 +1,8 @@
 # ds4.c - AMD HIP Fork
 
 > **This is a fork of [antirez/ds4](https://github.com/antirez/ds4)** - see below for what this fork adds.
+> 
+> 🇮🇹 **Italian speakers**: See the [Study Guide (Italian)](STUDY_ITA.md) for a comprehensive guide to understanding this project.
 
 ---
 
