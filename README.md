@@ -1,4 +1,27 @@
-# ds4.c
+# ds4.c - AMD HIP Fork
+
+> **This is a fork of [antirez/ds4](https://github.com/antirez/ds4)** - see below for what this fork adds.
+
+---
+
+## About the Original Project
+
+`ds4.c` is a small native inference engine for DeepSeek V4 Flash created by **Salvatore Sanfilippo** (antirez), the legendary creator of Redis. This project owes its existence to his vision and engineering excellence.
+
+### A Huge Thank You to antirez
+
+This fork exists because of the incredible work antirez put into the original project. The engineering decisions in ds4.c are remarkable:
+
+- **KV cache on disk** instead of RAM - a truly innovative approach
+- **DeepSeek V4 Flash** - a frontier model that outperforms much smaller dense models
+- **1 million token context** - unprecedented local inference capability
+- **IQ2 quantization** - 81GB model that fits in 128GB RAM
+- **Metal-only optimization** - showing what's possible with proper hardware-specific code
+- **Tool calling** - production-ready agent integration
+
+The original project demonstrates that local inference can be a first-class citizen, not just a compromise. We are deeply grateful for this contribution to the community.
+
+---
 
 `ds4.c` is a small native inference engine for DeepSeek V4 Flash. It is
 intentionally narrow: not a generic GGUF runner, not a wrapper around another
@@ -483,26 +506,50 @@ Do not treat the CPU path as the production target. The server is Metal-only,
 and the optimized implementation lives in the Metal graph path. This may
 change in the future.
 
-## AMD HIP (ROCm) Backend
+## What This Fork Adds: AMD HIP (ROCm) Backend
 
-Experimental support for AMD GPUs via HIP/ROCm is available. Build with:
+This fork adds experimental support for **AMD GPUs** via HIP/ROCm, enabling ds4 to run on Linux systems with AMD graphics cards (e.g., Ryzen AI Max+).
+
+### Build
 
 ```sh
 make ds4-hip USE_HIP=1
 ./ds4-hip --backend hip -p "Hello"
 ```
 
-**Requirements:**
+### Requirements
 - AMD GPU with ROCm runtime (tested on Radeon 8060S)
 - ROCm libraries installed (`hipamd`, `rocblas`, `rocsolver`)
+- Linux (tested on Arch Linux)
 
-**Current Status:**
-- GPU initialization and detection works
-- Fallback to CPU when model exceeds GPU memory
-- ROCm backend allows running on Linux AMD systems (e.g., Ryzen AI Max+)
+### Current Status
+- ✅ GPU detection and initialization
+- ✅ ROCm/hip runtime integration
+- ✅ rocBLAS matmul support
+- ⚠️ Fallback to CPU when model exceeds GPU memory (see below)
 
-Note: The current DeepSeek V4 Flash model (~81GB) exceeds most AMD GPU VRAM.
-For full GPU acceleration, a smaller model variant would be needed.
+### The VRAM Challenge
+
+The current DeepSeek V4 Flash model (~81GB compressed) exceeds most AMD consumer GPU VRAM (typically 32-64GB). This means:
+
+| GPU | VRAM | Model Size | Fits? |
+|-----|------|------------|-------|
+| Apple Silicon (unified) | 128GB RAM | 81GB | ✅ Yes |
+| Radeon 8060S | 62GB | 81GB | ❌ No |
+
+The model fits in Apple unified memory but not in discrete AMD VRAM. Options:
+
+1. Wait for smaller model variants (Q4 or more aggressive quantization)
+2. Implement layer-by-layer decompression + GPU offload
+3. Use CPU inference with GPU initialization (current workaround)
+
+### Motivation
+
+This fork exists to explore running frontier models on AMD hardware. The goal is to enable local inference without cloud dependencies, specifically on modern AMD laptops and desktops.
+
+---
+
+*This fork is a tribute to antirez's vision for local-first AI inference.*
 
 ## Test Vectors
 
